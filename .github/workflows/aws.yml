@@ -57,7 +57,7 @@ on:
 env:
   AWS_REGION: ap-south-1
   APPLICATION_NAME: cicd-aws
-  DEPLOYMENT_GROUP: mci-cd-group
+  DEPLOYMENT_GROUP: ci-cd-group
 
 permissions:
   contents: read
