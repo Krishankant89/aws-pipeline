@@ -90,7 +90,7 @@ jobs:
     # Step 4: Upload artifact to S3
     - name: Upload build artifact to S3
       run: |
-        aws s3 cp deploy.zip s3://my-cicd-artifacts/deploy.zip
+        aws s3 cp deploy.zip s3://my-cicd-artifacts.yml/deploy.zip
 
     # Step 5: Trigger CodeDeploy deployment
     - name: Deploy application using CodeDeploy
