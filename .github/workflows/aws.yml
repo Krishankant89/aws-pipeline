@@ -1,0 +1,101 @@
+# This workflow demonstrates a CI/CD deployment to AWS using GitHub.
+# When code is pushed to the "main" branch, the pipeline will trigger
+# AWS services to build and deploy the application.
+
+# ==========================================================
+# BEFORE USING THIS WORKFLOW COMPLETE THESE SETUP STEPS
+# ==========================================================
+
+# 1. Create an EC2 instance where your application will run.
+#    Example:
+#    - Launch an Amazon Linux instance in EC2.
+#    - Install Apache or your web server.
+#    - Install the AWS CodeDeploy agent.
+
+# 2. Create an IAM Role for the EC2 instance.
+#    Attach policy:
+#    AmazonEC2RoleforAWSCodeDeploy
+#    Attach this role to your EC2 instance.
+
+# 3. Create a CodeDeploy Application.
+#    Example:
+#    - Go to AWS CodeDeploy console
+#    - Create Application
+#    - Choose compute platform: EC2/On-premises
+
+# 4. Create a Deployment Group.
+#    - Select your EC2 instance using tags.
+#    - Example tag:
+#        Key: Name
+#        Value: cicd-server
+
+# 5. Create a CodePipeline.
+#    Stages:
+#    Source → GitHub
+#    Build → CodeBuild
+#    Deploy → CodeDeploy
+
+# 6. Add these files to your repository:
+#    appspec.yml
+#    index.html
+#    scripts/install.sh
+
+# appspec.yml tells CodeDeploy how to copy files to EC2.
+
+# 7. Store AWS credentials in GitHub secrets:
+#    AWS_ACCESS_KEY_ID
+#    AWS_SECRET_ACCESS_KEY
+
+# ==========================================================
+
+name: AWS CI-CD Deployment
+
+on:
+  push:
+    branches: ["main"]
+
+env:
+  AWS_REGION: ap-south-1
+  APPLICATION_NAME: my-cicd-app
+  DEPLOYMENT_GROUP: my-deployment-group
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy to AWS
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+
+    # Step 1: Checkout repository code
+    - name: Checkout source code
+      uses: actions/checkout@v4
+
+    # Step 2: Configure AWS credentials
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    # Step 3: Create deployment package
+    - name: Zip application files
+      run: |
+        zip -r deploy.zip .
+
+    # Step 4: Upload artifact to S3
+    - name: Upload build artifact to S3
+      run: |
+        aws s3 cp deploy.zip s3://my-cicd-artifacts/deploy.zip
+
+    # Step 5: Trigger CodeDeploy deployment
+    - name: Deploy application using CodeDeploy
+      run: |
+        aws deploy create-deployment \
+          --application-name $APPLICATION_NAME \
+          --deployment-group-name $DEPLOYMENT_GROUP \
+          --s3-location bucket=my-cicd-artifacts,key=deploy.zip,bundleType=zip
